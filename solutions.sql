@@ -409,3 +409,47 @@ ORDER BY
     number_of_figurines DESC
 LIMIT 3
 ;
+
+/*
+Day 13 of SQL Advent Calendar
+Today's Question:
+
+We need to make sure Santa's sleigh is properly balanced. Find the total weight of gifts for each recipient.
+
+Table name: gifts
+
+gift_id	gift_name	recipient	weight_kg
+1	Toy Train	John	2.5
+2	Chocolate Box	Alice	0.8
+3	Teddy Bear	Sophia	1.2
+4	Board Game	John	0.9
+*/
+SELECT
+    recipient
+    , SUM(weight_kg) AS total_weight
+FROM 
+    gifts
+GROUP BY
+    recipient
+;
+
+/*
+Day 14 of SQL Advent Calendar
+Today's Question:
+
+Which ski resorts had snowfall greater than 50 inches?
+
+Table name: snowfall
+
+resort_name	location	snowfall_inches
+Snowy Peaks	Colorado	60
+Winter Wonderland	Utah	45
+Frozen Slopes	Alaska	75
+*/
+SELECT
+    resort_name
+FROM 
+    snowfall
+WHERE 
+    snowfall_inches > 50
+;

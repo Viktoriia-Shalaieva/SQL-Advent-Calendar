@@ -485,3 +485,34 @@ parent_id	child_id
 7	10
 4	8
 */
+
+WITH ParentChildCount AS (
+    SELECT 
+        f.name AS parent_name
+        , COUNT(pcr.child_id) AS total_children
+    FROM 
+        parent_child_relationships pcr
+    JOIN 
+        family_members f
+    ON 
+        pcr.parent_id = f.member_id
+    GROUP BY 
+        f.name
+),
+RankedParents AS (
+    SELECT 
+        parent_name,
+        total_children,
+        RANK() OVER (ORDER BY total_children DESC) AS rank
+    FROM 
+        ParentChildCount
+)
+SELECT 
+    parent_name,
+    total_children
+FROM 
+    RankedParents
+WHERE 
+    rank <= 3
+;
+

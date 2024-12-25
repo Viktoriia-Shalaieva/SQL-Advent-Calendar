@@ -516,3 +516,315 @@ WHERE
     rank <= 3
 ;
 
+/*
+Day 16 of SQL Advent Calendar
+Today's Question:
+
+As the owner of a candy store, you want to understand which of your products are selling best. Write a query to calculate the total revenue generated from each candy category.
+
+Table name: candy_sales
+
+sale_id	candy_name	quantity_sold	price_per_unit	category
+1	Candy Cane	20	1.5	Sweets
+2	Chocolate Bar	10	2	Chocolate
+3	Lollipop	5	0.75	Sweets
+4	Dark Chocolate Truffle	8	2.5	Chocolate
+5	Gummy Bears	15	1.2	Sweets
+6	Chocolate Fudge	12	3	Chocolate
+*/
+
+SELECT
+    category
+    , SUM(quantity_sold * price_per_unit) AS total_revenue_by_category
+FROM
+    candy_sales
+GROUP BY
+    category
+ORDER BY
+    total_revenue_by_category DESC
+;
+
+/*
+Day 17 of SQL Advent Calendar
+Today's Question:
+
+The Grinch is planning out his pranks for this holiday season. Which pranks have a difficulty level of “Advanced” or “Expert"? List the prank name and location (both in descending order).
+
+Table name: grinch_pranks
+
+prank_id	prank_name	location	difficulty
+1	Stealing Stockings	Whoville	Beginner
+2	Christmas Tree Topple	Whoville Town Square	Advanced
+3	Present Swap	Cindy Lous House	Beginner
+4	Sleigh Sabotage	Mount Crumpit	Expert
+5	Chimney Block	Mayors Mansion	Expert
+*/
+SELECT
+    prank_name
+    , location
+FROM 
+    grinch_pranks
+WHERE 
+    difficulty IN ('Advanced', 'Expert')
+ORDER BY 
+    location DESC
+    , prank_name DESC
+;
+
+/*
+Day 18 of SQL Advent Calendar
+Today's Question:
+
+A travel agency is promoting activities for a "Summer Christmas" party. They want to identify the top 2 activities based on the average rating. Write a query to rank the activities by average rating.
+
+Table name: activities
+
+activity_id	activity_name
+1	Surfing Lessons
+2	Jet Skiing
+3	Sunset Yoga
+Table name: activity_ratings
+
+rating_id	activity_id	rating
+1	1	4.7
+2	1	4.8
+3	1	4.9
+4	2	4.6
+5	2	4.7
+6	2	4.8
+7	2	4.9
+8	3	4.8
+9	3	4.7
+10	3	4.9
+11	3	4.8
+12	3	4.9
+*/
+WITH ActivityRatings AS (
+    SELECT 
+        ar.activity_id
+        , a.activity_name
+        , AVG(ar.rating) AS average_rating
+    FROM 
+        activity_ratings ar
+    JOIN 
+        activities a
+    ON 
+        ar.activity_id = a.activity_id
+    GROUP BY 
+        ar.activity_id
+        , a.activity_name
+),
+RankedActivities AS (
+    SELECT 
+        activity_name
+        , average_rating
+        , RANK() OVER (ORDER BY average_rating DESC) AS rank
+    FROM 
+        ActivityRatings
+)
+SELECT 
+    activity_name
+    , average_rating
+FROM 
+    RankedActivities
+WHERE 
+    rank <= 2
+;
+
+/*
+Day 19 of SQL Advent Calendar
+Today's Question:
+
+Scientists are studying the diets of polar bears. Write a query to find the maximum amount of food (in kilograms) consumed by each polar bear in a single meal December 2024. Include the bear_name and biggest_meal_kg, and sort the results in descending order of largest meal consumed.
+
+Table name: polar_bears
+
+bear_id	bear_name	age
+1	Snowball	10
+2	Frosty	7
+3	Iceberg	15
+Table name: meal_log
+
+log_id	bear_id	food_type	food_weight_kg	date
+1	1	Seal	30	2024-12-01
+2	2	Fish	15	2024-12-02
+3	1	Fish	10	2024-12-03
+4	3	Seal	25	2024-12-04
+5	2	Seal	20	2024-12-05
+6	3	Fish	18	2024-12-06
+*/
+SELECT
+    b.bear_name
+    , MAX(m.food_weight_kg) AS biggest_meal_kg
+FROM
+    polar_bears b 
+JOIN 
+    meal_log m 
+ON 
+    b.bear_id = m.bear_id
+WHERE 
+    DATE(m.date) BETWEEN '2024-12-01' AND '2024-12-31'
+GROUP BY
+    b.bear_name
+ORDER BY
+    biggest_meal_kg DESC
+;
+
+/*
+Day 20 of SQL Advent Calendar
+Today's Question:
+
+We are looking for cheap gifts at the market. Which vendors are selling items priced below $10? List the unique (i.e. remove duplicates) vendor names.
+
+Table name: vendors
+
+vendor_id	vendor_name	market_location
+1	Cozy Crafts	Downtown Square
+2	Sweet Treats	Central Park
+3	Winter Warmers	Downtown Square
+Table name: item_prices
+
+item_id	vendor_id	item_name	price_usd
+1	1	Knitted Scarf	25
+2	2	Hot Chocolate	5
+3	2	Gingerbread Cookie	3.5
+4	3	Wool Hat	18
+5	3	Santa Pin	2
+*/
+SELECT
+    DISTINCT v.vendor_name
+FROM
+    vendors v 
+JOIN 
+    item_prices ip 
+ON 
+    v.vendor_id = ip.vendor_id
+WHERE 
+    ip.price_usd < 10
+;
+
+/*
+Day 21 of SQL Advent Calendar
+Today's Question:
+
+Santa needs to optimize his sleigh for Christmas deliveries. Write a query to calculate the total weight of gifts for each recipient type (good or naughty) and determine what percentage of the total weight is allocated to each type. Include the recipient_type, total_weight, and weight_percentage in the result.
+
+Table name: gifts
+
+gift_id	gift_name	recipient_type	weight_kg
+1	Toy Train	good	2.5
+2	Lumps of Coal	naughty	1.5
+3	Teddy Bear	good	1.2
+4	Chocolate Bar	good	0.3
+5	Board Game	naughty	1.8
+*/
+WITH TotalWeights AS (
+    SELECT 
+        recipient_type
+        , SUM(weight_kg) AS total_weight
+    FROM 
+        gifts
+    GROUP BY 
+        recipient_type
+),
+TotalSum AS (
+    SELECT 
+        SUM(total_weight) AS overall_total_weight
+    FROM 
+        TotalWeights
+)
+SELECT 
+    tw.recipient_type,
+    tw.total_weight,
+    ROUND((tw.total_weight * 100.0) / ts.overall_total_weight, 2) AS weight_percentage
+FROM 
+    TotalWeights tw
+JOIN 
+    TotalSum ts
+ORDER BY 
+    weight_percentage DESC
+;
+
+/*
+Day 22 of SQL Advent Calendar
+Today's Question:
+
+We are hosting a gift party and need to ensure every guest receives a gift. Using the guests and guest_gifts tables, write a query to identify the guest(s) who have not been assigned a gift (i.e. they are not listed in the guest_gifts table).
+
+Table name: guests
+
+guest_id	guest_name
+1	Cindy Lou
+2	The Grinch
+3	Max the Dog
+4	Mayor May Who
+Table name: guest_gifts
+
+gift_id	guest_id	gift_name
+1	1	Toy Train
+2	1	Plush Bear
+3	2	Bag of Coal
+4	2	Sleigh Bell
+5	3	Dog Treats
+*/
+SELECT
+    guest_name
+FROM 
+    guests 
+WHERE 
+    guest_id NOT IN
+    (SELECT 
+        guest_id
+    FROM 
+        guest_gifts
+        )
+;
+/*
+Day 23 of SQL Advent Calendar
+Today's Question:
+
+The Grinch tracked his weight every day in December to analyze how it changed daily. Write a query to return the weight change (in pounds) for each day, calculated as the difference from the previous day's weight.
+
+Table name: grinch_weight_log
+
+log_id	day_of_month	weight
+1	1	250
+2	2	248
+3	3	249
+4	4	247
+5	5	246
+6	6	248
+*/
+SELECT 
+    day_of_month
+    , weight
+    , weight - LAG(weight) OVER (ORDER BY day_of_month) AS weight_change
+FROM 
+    grinch_weight_log
+ORDER BY 
+    day_of_month
+;
+/*
+Day 24 of SQL Advent Calendar
+Today's Question:
+
+Santa is tracking how many presents he delivers each night leading up to Christmas. He wants a running total to see how many gifts have been delivered so far on any given night. Using the deliveries table, calculate the cumulative sum of gifts delivered, ordered by the delivery date.
+
+Table name: deliveries
+
+delivery_date	gifts_delivered
+2024-12-20	120
+2024-12-21	150
+2024-12-22	200
+2024-12-23	300
+2024-12-24	500
+*/
+SELECT 
+    delivery_date
+    , gifts_delivered
+    , SUM(gifts_delivered) OVER (ORDER BY delivery_date) AS cumulative_gifts
+FROM 
+    deliveries
+ORDER BY 
+    delivery_date
+;
